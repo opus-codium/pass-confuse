@@ -1,0 +1,55 @@
+#!/usr/bin/env ruby
+
+require 'open3'
+require 'rfusefs'
+
+class ConfuseDir
+  def initialize
+    @password_store_root = File.expand_path '~/.password-store/'
+    raise "Password store directory does not exist: '#{@password_store_root}'" unless File.directory? @password_store_root
+
+    @secure_config_root = "#{@password_store_root}/confuse"
+    raise "Secure config directory does not exist: '#{@secure_config_root}'" unless File.directory? @secure_config_root
+  end
+
+  def contents(path)
+    Dir.chdir @secure_config_root do
+      Dir.glob("*.gpg").map { |path| path.delete_suffix '.gpg' }
+    end
+  end
+
+  def file?(path)
+    File.file? File.join(@secure_config_root, "#{path}.gpg")
+  end
+
+  def directory?(path)
+    File.directory? File.join(@secure_config_root, path)
+  end
+
+  def can_delete?(path)
+    true
+  end
+
+  def read_file(path)
+    `notify-send 'Read access to "#{path}"!'`
+    command = %W{pass show  confuse/#{path}}
+    stdout, status = Open3.capture2(*command)
+    stdout
+  end
+
+  def can_write?(path)
+    true
+  end
+
+  def write_to(path, content)
+    `notify-send 'Write access to "#{path}"!'`
+    command = %W{pass insert -m confuse/#{path}}
+    stdout_and_stderr_str, status = Open3.capture2e(*command, stdin_data: content)
+  end
+end
+
+# Usage: #{$0} mountpoint [mount_options]
+FuseFS.main() do |options|
+  pp options
+  ConfuseDir.new
+end

@@ -1,0 +1,27 @@
+require:
+  - rubocop-rake
+
+AllCops:
+  TargetRubyVersion: 2.7
+  AllowSymlinksInCacheRootDirectory: true
+  NewCops: enable
+  Exclude:
+    - vendor/**/*
+
+Layout/LineLength:
+  Enabled: false
+
+Style/Documentation:
+  Enabled: false
+
+Style/FrozenStringLiteralComment:
+  Enabled: false
+
+Style/TrailingCommaInArrayLiteral:
+  EnforcedStyleForMultiline: comma
+
+Style/TrailingCommaInHashLiteral:
+  EnforcedStyleForMultiline: comma
+
+Style/TrailingCommaInArguments:
+  EnforcedStyleForMultiline: consistent_comma
