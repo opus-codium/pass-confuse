@@ -49,7 +49,6 @@ class ConfuseDir
 end
 
 # Usage: #{$0} mountpoint [mount_options]
-FuseFS.main() do |options|
-  pp options
-  ConfuseDir.new
-end
+FuseFS.set_root ConfuseDir.new
+FuseFS.mount_under File.expand_path('~/.confuse')
+FuseFS.run
