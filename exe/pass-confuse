@@ -1,54 +1,41 @@
 #!/usr/bin/env ruby
 
-require 'open3'
-require 'rfusefs'
+def exit_with_usage
+  puts <<~USAGE
+    Usage: #{$0} FILE
 
-class ConfuseDir
-  def initialize
-    @password_store_root = File.expand_path '~/.password-store/'
-    raise "Password store directory does not exist: '#{@password_store_root}'" unless File.directory? @password_store_root
+    Convert a regular file into a `confused` one.
 
-    @secure_config_root = "#{@password_store_root}/confuse"
-    raise "Secure config directory does not exist: '#{@secure_config_root}'" unless File.directory? @secure_config_root
-  end
-
-  def contents(path)
-    Dir.chdir @secure_config_root do
-      Dir.glob("*.gpg").map { |path| path.delete_suffix '.gpg' }
-    end
-  end
-
-  def file?(path)
-    File.file? File.join(@secure_config_root, "#{path}.gpg")
-  end
-
-  def directory?(path)
-    File.directory? File.join(@secure_config_root, path)
-  end
-
-  def can_delete?(path)
-    true
-  end
-
-  def read_file(path)
-    `notify-send 'Read access to "#{path}"!'`
-    command = %W{pass show  confuse/#{path}}
-    stdout, status = Open3.capture2(*command)
-    stdout
-  end
-
-  def can_write?(path)
-    true
-  end
-
-  def write_to(path, content)
-    `notify-send 'Write access to "#{path}"!'`
-    command = %W{pass insert -m confuse/#{path}}
-    stdout_and_stderr_str, status = Open3.capture2e(*command, stdin_data: content)
-  end
+    The `confusing` process means:
+      - Moving the file content into `pass`
+      - Symlink the file path to the `confused` area (ie. `~/.confuse`)
+    Any subsequent file path access will trig an access to `pass` using your regular way (e.g. gpg-agent's pin entry)
+  USAGE
+  exit 1
 end
 
-# Usage: #{$0} mountpoint [mount_options]
-FuseFS.set_root ConfuseDir.new
-FuseFS.mount_under File.expand_path('~/.confuse')
-FuseFS.run
+exit_with_usage if ARGV.empty?
+
+filename = ARGV.shift
+
+raise "'#{filename}' does not exist!" unless File.exist? filename
+
+raise "'#{filename}' must be a file!" unless File.file? filename
+
+raise "'#{filename}' must be a regular file! (Already confused file?)" if File.symlink? filename
+
+def relative_path_from_home(filename)
+  filename = File.expand_path(filename)
+  home = File.expand_path '~'
+  require 'pathname'
+  Pathname.new(filename).relative_path_from(home).to_s
+end
+
+@confuse_mountpoint = File.expand_path('~/.confuse')
+confused_path = relative_path_from_home(filename).gsub '..', '__' # Allow confused files from outside of user's home
+confused_path = File.join @confuse_mountpoint, confused_path
+
+require 'fileutils'
+FileUtils.mkdir_p File.dirname(confused_path)
+FileUtils.cp filename, confused_path
+FileUtils.ln_sf confused_path, filename

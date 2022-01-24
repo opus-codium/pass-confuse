@@ -1,28 +1,41 @@
-# Pass::Confuse
-
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/pass/confuse`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-TODO: Delete this and the text above, and describe your gem
+# pass-confuse
 
 ## Installation
 
 Add this line to your application's Gemfile:
 
-```ruby
-gem 'pass-confuse'
+```shell-session
+$ gem install pass-confuse
 ```
 
-And then execute:
+`pass-confuse` relies on `pass-confused` to be started to work.
 
-    $ bundle install
+`pass-confused` is a background process to mount the virtual filesystem to put configuration files in.
 
-Or install it yourself as:
+To run `pass-confused`, you can run it manually or use `systemd --user` to handle the service in userland.
 
-    $ gem install pass-confuse
+In `~/.config/systemd/user/pass-confused.service`:
+
+```
+[Unit]
+Description=Pass Confused service
+
+[Service]
+ExecStart=/usr/bin/pass-confused
+
+[Install]
+WantedBy=default.target
+```
 
 ## Usage
 
-TODO: Write usage instructions here
+To _confuse_ a file:
+
+```
+pass-confuse ~/.my-config-with-secrets.conf
+```
+
+Now, any accesses to `~/.my-config-with-secrets.conf` will trigger a `pass` call.
 
 ## Development
 
@@ -32,5 +45,5 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/pass-confuse.
+Bug reports and pull requests are welcome on GitHub at https://github.com/opus-codium/pass-confuse.
 

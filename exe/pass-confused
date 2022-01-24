@@ -1,0 +1,103 @@
+#!/usr/bin/env ruby
+
+require 'open3'
+require 'rfusefs'
+
+class ConfuseDir
+  def initialize
+    @password_store_root = File.expand_path '~/.password-store/'
+    raise "Password store directory does not exist: '#{@password_store_root}'" unless File.directory? @password_store_root
+
+    @secure_config_root = "#{@password_store_root}/confuse"
+  end
+
+  def contents(path)
+    return [] unless File.directory? @secure_config_root
+
+    pass_contents(path)
+  end
+
+  def pass_contents(path)
+    files = []
+    secure_config_path = File.join @secure_config_root, path
+    Dir.chdir secure_config_path do
+      files = Dir.glob('*', File::FNM_DOTMATCH).select { |file| File.directory?(file) || (File.file?(file) && file.end_with?('.gpg')) }
+    end
+    files.map { |file| file.delete_suffix '.gpg' }
+  end
+
+  def size(path)
+    # HACK: Always return a static size to avoid `pass` access on files list (e.g. `ls ~/.confuse/`)
+    42
+  end
+
+  def file?(path)
+    File.file? File.join(@secure_config_root, "#{path}.gpg")
+  end
+
+  def directory?(path)
+    File.directory? File.join(@secure_config_root, path)
+  end
+
+  def can_delete?(path)
+    true
+  end
+
+  def delete(path)
+    command = %W{pass rm confuse/#{path}}
+    stdout, status = Open3.capture2(*command)
+    status.success?
+  end
+
+  def read_file(path)
+    `notify-send 'Read access to "#{path}"!'`
+    command = %W{pass show confuse/#{path}}
+    stdout, status = Open3.capture2(*command)
+    stdout
+  end
+
+  def mkdir(path)
+    FileUtils.mkdir File.join(@secure_config_root, path)
+  end
+
+  def rmdir(path)
+    FileUtils.rmdir File.join(@secure_config_root, path)
+  end
+
+  def can_mkdir?(path)
+    true
+  end
+
+  def can_rmdir?(path)
+    true
+  end
+
+  def can_write?(path)
+    true
+  end
+
+  def write_to(path, content)
+    `notify-send 'Write access to "#{path}"!'`
+    command = %W{pass insert -m confuse/#{path}}
+    stdout_and_stderr_str, status = Open3.capture2e(*command, stdin_data: content)
+  end
+end
+
+def exit_with_usage
+  puts <<~USAGE
+    Usage: #{$0}
+
+    Expose a FUSE virtual filesystem to store the config file.
+    This process is supposed to be ran in background.
+  USAGE
+  exit 1
+end
+
+exit_with_usage unless ARGV.empty?
+
+mountpoint = '~/.confuse'
+FuseFS.set_root ConfuseDir.new
+FileUtils.mkdir_p File.expand_path(mountpoint)
+FuseFS.mount_under File.expand_path(mountpoint)
+puts "Running pass-confuse FUSE virtual filesystem with mountpoint: '#{mountpoint}'..."
+FuseFS.run
