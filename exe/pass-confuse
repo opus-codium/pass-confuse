@@ -2,7 +2,7 @@
 
 def exit_with_usage
   puts <<~USAGE
-    Usage: #{$0} FILE
+    Usage: #{$PROGRAM_NAME} FILE
 
     Convert a regular file into a `confused` one.
 
