@@ -1,8 +1,23 @@
 # pass-confuse
 
-## Installation
+`pass-confuse` is a tool to protect your configuration files like your passwords using [pass](https://www.passwordstore.org/).
 
-Add this line to your application's Gemfile:
+_Confusing_ a file in our context means:
+ * Encrypt the file in `pass`
+ * Remove the clear-text file
+ * Symlink the encrypted entry from `pass` to original path
+
+## Usage
+
+To _confuse_ a file:
+
+```
+pass-confuse ~/.my-config-with-secrets.conf
+```
+
+Now, any accesses to `~/.my-config-with-secrets.conf` will trigger a `pass` call.
+
+## Installation
 
 ```shell-session
 $ gem install pass-confuse
@@ -26,16 +41,6 @@ ExecStart=/usr/bin/pass-confused
 [Install]
 WantedBy=default.target
 ```
-
-## Usage
-
-To _confuse_ a file:
-
-```
-pass-confuse ~/.my-config-with-secrets.conf
-```
-
-Now, any accesses to `~/.my-config-with-secrets.conf` will trigger a `pass` call.
 
 ## Development
 

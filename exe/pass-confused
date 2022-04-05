@@ -26,7 +26,7 @@ class ConfuseDir
     files.map { |file| file.delete_suffix '.gpg' }
   end
 
-  def size(path)
+  def size(_path)
     # HACK: Always return a static size to avoid `pass` access on files list (e.g. `ls ~/.confuse/`)
     42
   end
@@ -39,20 +39,20 @@ class ConfuseDir
     File.directory? File.join(@secure_config_root, path)
   end
 
-  def can_delete?(path)
+  def can_delete?(_path)
     true
   end
 
   def delete(path)
-    command = %W{pass rm confuse/#{path}}
-    stdout, status = Open3.capture2(*command)
+    command = %W[pass rm confuse/#{path}]
+    _stdout, status = Open3.capture2(*command)
     status.success?
   end
 
   def read_file(path)
     `notify-send 'Read access to "#{path}"!'`
-    command = %W{pass show confuse/#{path}}
-    stdout, status = Open3.capture2(*command)
+    command = %W[pass show confuse/#{path}]
+    stdout, _status = Open3.capture2(*command)
     stdout
   end
 
@@ -64,28 +64,28 @@ class ConfuseDir
     FileUtils.rmdir File.join(@secure_config_root, path)
   end
 
-  def can_mkdir?(path)
+  def can_mkdir?(_path)
     true
   end
 
-  def can_rmdir?(path)
+  def can_rmdir?(_path)
     true
   end
 
-  def can_write?(path)
+  def can_write?(_path)
     true
   end
 
   def write_to(path, content)
     `notify-send 'Write access to "#{path}"!'`
-    command = %W{pass insert -m confuse/#{path}}
-    stdout_and_stderr_str, status = Open3.capture2e(*command, stdin_data: content)
+    command = %W[pass insert -m confuse/#{path}]
+    Open3.capture2e(*command, stdin_data: content)
   end
 end
 
 def exit_with_usage
   puts <<~USAGE
-    Usage: #{$0}
+    Usage: #{$PROGRAM_NAME}
 
     Expose a FUSE virtual filesystem to store the config file.
     This process is supposed to be ran in background.
